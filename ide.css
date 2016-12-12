@@ -1,0 +1,92 @@
+html, body {height: 100%; margin: 0; padding: 0}
+body {
+	padding: 8px;
+	background-color: navy;
+	font: bold 14px monospace;
+	overflow: hidden;
+}
+
+.menu {
+	background-color: silver;
+	list-style-type: none;
+	margin: 0px;
+    padding: 1px 4px;
+    overflow: hidden;
+}
+
+.menu li {
+	display: inline;
+	margin-left: 1em;
+}
+
+.menu li kbd {
+	color: darkred;
+}
+
+.window {
+  width: calc(100% - 6px);
+  background: navy;
+  position: relative;
+  border: 1px solid white;
+  margin: 8px 2px 8px;
+	height: calc(100% - 70px);
+}
+.window:after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  background: white;
+  z-index: -2;
+}
+.window:before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border: solid 1px navy;
+	z-index: -1;
+}
+
+.window .top {
+	position: absolute;
+	margin: 0 auto;
+	top: -9px;
+	left: 50%;
+	color: white;
+}
+
+.window .top .title {
+	position: relative;
+	left: -50%;
+	background-color: navy;
+	padding: 0 4px;
+	text-transform: uppercase;
+}
+.window .top .title:before {
+	content: '|';
+	color: navy;
+}
+.window .top .title:after {
+	content: '|';
+	color: navy;
+}
+
+.window .source {
+	color: yellow;
+	white-space: pre;
+	overflow: hidden;
+	margin: 4px 8px;
+	display: block;
+  outline: none;
+}
+
+.window .source .comment    {color: darkgray}
+.window .source .constant   {color: magenta}
+.window .source .number     {color: cyan}
+.window .source .statement  {color: white}
+.window .source .special    {color: darkcyan}
