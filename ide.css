@@ -90,3 +90,4 @@ body {
 .window .source .number     {color: cyan}
 .window .source .statement  {color: white}
 .window .source .special    {color: darkcyan}
+.window .source .cursor     {color: white; background-color: darkred}
