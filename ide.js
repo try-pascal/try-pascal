@@ -63,17 +63,40 @@ function edit(event) {
 		case 'ArrowRight': cursor.x++; break;
 		case 'ArrowUp':    cursor.y--; break;
 		case 'ArrowDown':  cursor.y++; break;
+		case 'Home':       cursor.x = 0; break;
+		case 'End':        cursor.x = source[cursor.y].length; break;
 		case 'Backspace': {
-			source[cursor.y] = source[cursor.y].substr(0, cursor.x - 1) + source[cursor.y].substr(cursor.x);
-			cursor.x--;
+			if (cursor.x === 0) {
+				var newY = cursor.y - 1;
+				if (newY >= 0) {
+					cursor.x = source[newY].length;
+					source[newY] += source[cursor.y];
+					source.splice(cursor.y, 1);
+					cursor.y = newY;
+				}
+			} else {
+				source[cursor.y] = source[cursor.y].substr(0, cursor.x - 1) + source[cursor.y].substr(cursor.x);
+				cursor.x--;
+			}
 			break;
 		}
 		case 'Delete': {
-			source[cursor.y] = source[cursor.y].substr(0, cursor.x) + source[cursor.y].substr(cursor.x + 1);
+			if (cursor.x === source[cursor.y].length) {
+				var nextLine = cursor.y + 1;
+				if (source.length >= nextLine) {
+					source[cursor.y] += source.splice(nextLine, 1)[0];
+				}
+			} else {
+				source[cursor.y] = source[cursor.y].substr(0, cursor.x) + source[cursor.y].substr(cursor.x + 1);
+			}
 			break;
 		}
 		case 'Enter': {
-			console.log('enter');
+			var tail = source[cursor.y].substr(cursor.x);
+			source[cursor.y] = source[cursor.y].substr(0, cursor.x);
+			cursor.y++;
+			cursor.x = 0;
+			source.splice(cursor.y, 0, tail);
 			break;
 		}
 		default: console.log(event.key, event.keyCode)
