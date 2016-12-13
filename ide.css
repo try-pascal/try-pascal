@@ -19,6 +19,10 @@ body {
 	margin-left: 1em;
 }
 
+.menu li.muted {
+	opacity: 0.4;
+}
+
 .menu li kbd {
 	color: darkred;
 }

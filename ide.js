@@ -1,40 +1,62 @@
-var title = document.querySelector('.window .title');
+/* highlight rules */
 var markup = {
-	statement: 'var const String Integer begin end. if while for'.split(' '),
-	program: {start: 'program', end: [';', '\n'], run: updateTitle},
-	special: '; ( ) : := < > * / % ! + -'.split(' '),
+	statement: 'program var const String Integer begin end. if while for'.split(' '),
+	special: '; ( ) := : = < > * / % ! + -'.split(' '),
 	comment: {start: '{', end: '}'},
 	constant: {start: ['"', '\'']},
-	number: /^[\d.]+$/
+	number: '1234567890.'.split('')
 };
+// helpers
 var classes = Object.keys(markup);
+var blocks = {};
+classes.filter(key => markup[key].start)
+	.forEach(key => {
+		if (markup[key].start instanceof Array) markup[key].start.forEach(start => blocks[start] = key);
+		else blocks[markup[key].start] = key;
+	});
+var lists = {};
+classes.filter(key => markup[key] instanceof Array)
+	.forEach(key => {
+		markup[key].forEach(word => lists[word.toLowerCase()] = key);
+	});
+var regexps = classes.filter(key => key instanceof RegExp);
+
+/* base constants */
 var cursor = {x: 0, y: 0};
+tab = 8;
 var source = [];
+
+var title = document.querySelector('.window .title');
 var code = document.querySelector('.source');
 
-init();
+/* run */
 
-document.addEventListener('keyup', function(event) {
-	edit(event);
-	highlight();
-});
+init();
+document.addEventListener('keydown', handler);
+document.addEventListener('keypress', handler);
 
 function init() {
-	source = code.innerHTML.split(/[\n\r]+/);
-	highlight();
-	// placeCursor()
+	source = code.innerHTML.replace(/\t/g, ' '.repeat(8)).split(/[\n\r]+/);
+	handler();
 }
 
-function updateTitle(buffer) {
-	var programName = buffer[2];
-	if (!programName.trim() || programName === ';') programName = '';
+function handler(event) {
+	edit(event);
+	updateTitle();
+	highlight();
+}
+
+/* main */
+
+function updateTitle() {
+	var found = source.find(string => string.match(/^\s*program\s+(\w+);?$/));
+	var programName = found && RegExp.$1;
 	title.innerHTML = (programName ? programName.toUpperCase() : 'NONAME00') + '.PAS';
-	buffer[0] = wrap(buffer[0], 'statement');
-	if (buffer[buffer.length - 1] === ';') buffer[buffer.length - 1] = wrap(';', 'special');
-	return buffer.join('');
 }
 
 function edit(event) {
+	if (!event) return;
+
 	switch (event.key) {
 		//TODO: add event.ctrlKey
 		case 'ArrowLeft':  cursor.x--; break;
@@ -43,85 +65,101 @@ function edit(event) {
 		case 'ArrowDown':  cursor.y++; break;
 		case 'Backspace': {
 			source[cursor.y] = source[cursor.y].substr(0, cursor.x - 1) + source[cursor.y].substr(cursor.x);
+			cursor.x--;
+			break;
+		}
+		case 'Delete': {
+			source[cursor.y] = source[cursor.y].substr(0, cursor.x) + source[cursor.y].substr(cursor.x + 1);
+			break;
 		}
 		case 'Enter': {
 			console.log('enter');
+			break;
 		}
 		default: console.log(event.key, event.keyCode)
 	}
 
 	if (cursor.x < 0) cursor.x = 0;
-	if (cursor.x > source[cursor.y].length) cursor.x = source[cursor.y].length;
-	if (cursor.x === source[cursor.y].length) source[cursor.y] += ' ';
 	if (cursor.y < 0) cursor.y = 0;
 	if (cursor.y >= source.length) cursor.y = source.length - 1;
 
 	if (event.key.length === 1) {
-		source[cursor.y] = source[cursor.y].substr(0, cursor.x) + event.key + source[cursor.y].substr(cursor.x);
+		var gap = cursor.x - source[cursor.y].length;
+		if (gap < 0) gap = 0;
+		source[cursor.y] = source[cursor.y].substr(0, cursor.x) + ' '.repeat(gap) + event.key + source[cursor.y].substr(cursor.x);
 		cursor.x++;
 	}
+
+	event.preventDefault();
 }
 
 function highlight() {
-	var cursorShift = source.reduce((shift, string, i) => {
-		if (cursor.y > i) shift += string.length + 1;
-		if (cursor.y === i) shift += cursor.x;
-		return shift;
-	}, 0);
-
-	var splitted = source.join('\n')
-		.split(/([\s\n\r\t]+|:=|[;{}():="'<>*/%!+-])/)
-		.filter(str => str !== '');
-
-	var buffer = [];
 	var result = [];
-	var inside = false;
-	var end = false;
 
-	var processedLength = 0;
-	splitted.forEach(part => {
-		processedLength += part.length;
-		var string = part;
-		if (processedLength > cursorShift) {
-			var index = cursorShift - (processedLength - part.length);
-			string = string.substr(0, index) + wrap(string[index], 'cursor') + string.substr(index + 1);
-			cursorShift = Infinity;
-		}
+	source.forEach((string, y) => {
+		var buffer = '', cBuffer = '', block = false, end = false, line = [], key = false;
 
-		if (inside) {
-			if (end instanceof Array ? !end.includes(part) : end !== part) buffer.push(string);
-			else {
-				buffer.push(string);
-				var buffered = typeof markup[inside] === 'object' && markup[inside].run
-					? markup[inside].run(buffer)
-					: buffer.join('');
-				result.push(wrap(buffered, inside));
-				end = false;
-				inside = false;
-				buffer = [];
+		if (string.length < cursor.x) string += ' '.repeat(cursor.x - string.length);
+		string += ' ';
+
+		string.split('').forEach((letter, x) => {
+			var cursoredLetter = letter;
+			if (cursor.x === x && cursor.y === y) {
+				cursoredLetter = letter === '\t'
+					? wrap(' ', 'cursor') + ' '.repeat(tab - 1)
+					: wrap(letter, 'cursor');
 			}
-		} else {
-			classes.some(cls => {
-				if (typeof markup[cls] === 'object') {
-					if (markup[cls].start instanceof Array && markup[cls].start.includes(part) || markup[cls].start === part) {
-						inside = cls;
-						end = markup[cls].end || part;
-						buffer.push(string);
-						return true;
-					}
+
+			if (block) {
+				cBuffer += cursoredLetter;
+				if (end instanceof Array ? end.includes(letter) : end === letter) {
+					line.push(wrap(cBuffer, block));
+					end = false;
+					block = false;
+					cBuffer = '';
 				}
-				if ((markup[cls] instanceof RegExp && markup[cls].test(part)) || (markup[cls] instanceof Array && markup[cls].includes(part))) {
-					result.push(wrap(string, cls));
-					return true;
+			} else {
+				buffer += letter;
+				var flush = false;
+
+				if (key = (lists[buffer.toLowerCase()] || checkRegexp(buffer))) {
+					cBuffer += cursoredLetter;
+					flush = true;
+				} else if (letter === ' ' || letter === '\t') {
+					cBuffer += cursoredLetter;
+					flush = true;
+				} else if (key = lists[letter]) {
+					line.push(cBuffer);
+					cBuffer = cursoredLetter;
+					flush = true;
+				} else if (block = blocks[letter]) {
+					line.push(cBuffer);
+					cBuffer = cursoredLetter;
+					buffer = '';
+					end = markup[block].end || letter;
+				} else {
+					cBuffer += cursoredLetter;
 				}
-				return false;
-			}) || result.push(string);
-		}
+
+				if (flush) {
+					line.push(key ? wrap(cBuffer, key) : cBuffer);
+					buffer = '';
+					if (!block) cBuffer = '';
+				}
+			}
+		});
+
+		line.push(key || block ? wrap(cBuffer, key || block) : cBuffer);
+		result.push(line.join(''));
 	});
 
-	code.innerHTML = result.join('');
+	code.innerHTML = result.join('\n');
 }
 
 function wrap(string, type) {
 	return '<span class="' + type + '">' + string + '</span>';
+}
+
+function checkRegexp(string) {
+	return regexps.find(key => markup[key].test(string));
 }
