@@ -101,11 +101,11 @@ function edit(event) {
 		}
 		case 'F9': {
 			if (event.altKey) {
-				console.log('run');
+				make();
 			}
 			break;
 		}
-		default: console.log(event.key, event.keyCode)
+		// default: console.log(event.key, event.keyCode)
 	}
 
 	if (cursor.x < 0) cursor.x = 0;
@@ -191,4 +191,12 @@ function wrap(string, type) {
 
 function checkRegexp(string) {
 	return regexps.find(key => markup[key].test(string));
+}
+
+function make() {
+	var ast = doAST(source);
+	var ir = doIR(ast);
+	var js = doCompile(ir);
+	var result = doExecute(js);
+	console.log(result);
 }
