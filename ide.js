@@ -119,7 +119,7 @@ function edit(event) {
 		cursor.x++;
 	}
 
-	event.preventDefault();
+	if (!['F12', 'F5'].includes(event.key)) event.preventDefault();
 }
 
 function highlight() {
