@@ -99,6 +99,12 @@ function edit(event) {
 			source.splice(cursor.y, 0, tail);
 			break;
 		}
+		case 'F9': {
+			if (event.altKey) {
+				console.log('run');
+			}
+			break;
+		}
 		default: console.log(event.key, event.keyCode)
 	}
 
